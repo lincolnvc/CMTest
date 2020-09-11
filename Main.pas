@@ -5,18 +5,30 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Generics.Collections, Vcl.ComCtrls,
-  Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Mask, REST.Json, REST.Json.Types;
+  Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Mask, REST.Json, REST.Json.Types, System.Contnrs;
 
 type
-
 
   // Classe da Lista da Questão 1
   TProduto = Class
     Codigo : Integer;
     Descricao : String;
+
   End;
 
   // Classe da Questão 2
+  TFilhoPessoa = Class
+  private
+    FNome: String;
+    FIdade: Integer;
+    procedure SetNome(const Value: String);
+    procedure SetIdade(const Value: Integer);
+  public
+    property Nome: String read FNome write SetNome;
+    property Idade: Integer read FIdade write SetIdade;
+  end;
+
+
   TPessoa = Class
   private
     [JSONNameAttribute('codigo')]
@@ -27,17 +39,43 @@ type
     [JSONMarshalledAttribute(False)]
     FDtNascimento: TDateTime;
     FCasado: Boolean;
+    FFilhos: TObjectList<TFilhoPessoa>;
     procedure SetId(const Value: Integer);
     procedure SetNome(const Value: String);
     procedure SetPeso(const Value: Real);
     procedure SetDtNascimento(const Value: TDateTime);
     procedure SetCasado(const Value: Boolean);
+    procedure SetFilhos(const Value: TObjectList<TFilhoPessoa>);
   public
     property Id: Integer read FId write SetId;
     property Nome: String read FNome write SetNome;
     property Peso: Real read FPeso write SetPeso;
     property DtNascimento: TDateTime read FDtNascimento write SetDtNascimento;
     property Casado: Boolean read FCasado write SetCasado;
+    property Filhos: TObjectList<TFilhoPessoa> read FFilhos write SetFilhos;
+  end;
+
+  TGerenciadorRecurso = class
+  private
+    FRecurso : TObjectList;
+    FMultiReadExclusiveWrite : TMultiReadExclusiveWriteSynchronizer;
+  public
+    function AdicionarObjeto(AObjeto : TObject):integer;
+    function PegarObjeto(const AIdx : Integer): TObject;
+    constructor Create;
+    destructor Free;
+  end;
+
+
+  TGravaListaThread = class(TThread)
+  private
+    FIndice : Integer;
+    FThread : String;
+    procedure EscreveLista();
+  protected
+    procedure Execute; override;
+  public
+    constructor Create (const CreateSuspended : boolean; const IndiceThread : integer; const NomeThread : string);
   end;
 
   TFormMain = class(TForm)
@@ -63,27 +101,26 @@ type
     chkCasado: TCheckBox;
     btnJSON: TButton;
     mmJSON: TMemo;
+    btnThread: TButton;
+    mmThread: TMemo;
     procedure Button1Click(Sender: TObject);
     procedure btnGerarClick(Sender: TObject);
     procedure btnProcurarClick(Sender: TObject);
     procedure pgMainChange(Sender: TObject);
     procedure edtPesquisaKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
-    procedure LimpaBusca;
+    procedure Limpa(Aba : Integer);
     procedure btnJSONClick(Sender: TObject);
     procedure lblCodigoKeyPress(Sender: TObject; var Key: Char);
     procedure lblPesoKeyPress(Sender: TObject; var Key: Char);
     procedure lblNascimentoKeyPress(Sender: TObject; var Key: Char);
-    // Métodos da lista (Dicionário) da questão 1
-//    procedure KeyNotify(Sender: TObject; const Item: String; Action: TCollectionNotification);
-//    procedure ValueNotify(Sender: TObject; const Item: TProduto; Action: TCollectionNotification);
+    procedure btnThreadClick(Sender: TObject);
 
   private
     { Private declarations }
   public
     DicProduto : TDictionary<String, TProduto>;
     Produto : TProduto;
-//    EnumeratorPessoa: TEnumerator<TPair<String, TProduto>>;
     { Public declarations }
   end;
 
@@ -93,6 +130,74 @@ var
 implementation
 
 {$R *.dfm}
+
+
+function TGerenciadorRecurso.AdicionarObjeto(AObjeto: TObject):integer;
+begin
+  Self.FMultiReadExclusiveWrite.BeginWrite();
+  try
+    Result := Self.FRecurso.Add(AObjeto);
+  finally
+    Self.FMultiReadExclusiveWrite.EndWrite();
+  end;
+end;
+
+
+constructor TGerenciadorRecurso.Create;
+begin
+  Self.FRecurso := TObjectList.Create;
+  Self.FRecurso.OwnsObjects := true;
+  Self.FMultiReadExclusiveWrite := TMultiReadExclusiveWriteSynchronizer.Create;
+end;
+
+destructor TGerenciadorRecurso.Free;
+begin
+  Self.FRecurso.Free;
+  Self.FMultiReadExclusiveWrite.Free;
+end;
+
+function TGerenciadorRecurso.PegarObjeto(const AIdx: Integer): TObject;
+begin
+  Self.FMultiReadExclusiveWrite.BeginRead();
+  try
+    Result := Self.FRecurso.Items[AIdx];
+  finally
+    Self.FMultiReadExclusiveWrite.EndRead();
+  end;
+end;
+
+
+constructor TGravaListaThread.Create(const CreateSuspended: boolean;
+  const IndiceThread: integer; const NomeThread : string);
+begin
+  Self.FIndice := IndiceThread;
+  Self.FThread := NomeThread;
+  Self.FreeOnTerminate  := true;
+  inherited Create(CreateSuspended);
+end;
+
+procedure TGravaListaThread.EscreveLista;
+var
+  I: Integer;
+begin
+
+  FormMain.DicProduto := TDictionary<String, TProduto>.Create;
+
+  For I := 1 to 100 Do
+    Begin
+      FormMain.Produto := TProduto.Create;
+      FormMain.Produto.Codigo := I;
+      FormMain.Produto.Descricao := FThread + ' - ' + FormatDateTime('hh:mm:ss',now);
+      FormMain.DicProduto.Add(IntToStr(FIndice) + '-' + FormatFloat('000', i), FormMain.Produto);
+    End;
+
+
+end;
+
+procedure TGravaListaThread.Execute;
+begin
+  EscreveLista();
+end;
 
 procedure TFormMain.btnGerarClick(Sender: TObject);
 var
@@ -104,10 +209,6 @@ var
 
 begin
 
-  // Criação da Lista do Dicionário
-//  DicProduto := TDictionary<String, TProduto>.Create;
-  //  DicProduto.OnKeyNotify := KeyNotify;
-  // DicProduto.OnValueNotify := ValueNotify;
 
   // Geração da lista com os 50000 registros
   For i := 1 to 50000 Do
@@ -118,7 +219,6 @@ begin
       DicProduto.Add(FormatFloat('00000', i), Produto);
     End;
 
-  // Carrega lista
 
   // Carrega os registros
   iniCarga := now;
@@ -144,6 +244,8 @@ end;
 procedure TFormMain.btnJSONClick(Sender: TObject);
 var
   Pessoa: TPessoa;
+  Filho: TFilhoPessoa;
+
 begin
 
   if lblCodigo.Text = '' then
@@ -183,15 +285,37 @@ begin
     End;
 
   Pessoa := TPessoa.Create;
+
   try
     Pessoa.Id := StrToInt(lblCodigo.Text);
     Pessoa.Nome := lblNome.Text;
     Pessoa.Peso := StrToFloat(lblPeso.Text);
     Pessoa.DtNascimento := StrToDate(lblNascimento.Text);
     Pessoa.Casado := chkCasado.Checked;
+
+  {
+    // Criação de 3 Filhos para compor o array
+
+
+    Filho := TFilhoPessoa.Create;
+    Filho.Nome := 'Mickey';
+    Filho.Idade := 30;
+    Pessoa.Filhos[0] := Filho;
+
+    Filho := TFilhoPessoa.Create;
+    Filho.Nome := 'Pateta';
+    Filho.Idade := 45;
+    Pessoa.Filhos[1] := Filho;
+
+    Filho := TFilhoPessoa.Create;
+    Filho.Nome := 'Pluto';
+    Filho.Idade := 10;
+    Pessoa.Filhos[2] := Filho;
+ }
     mmJSON.Lines.Text := TJson.ObjectToJsonString(Pessoa);
   finally
     Pessoa.Free;
+    Filho.Free;
   end;
 
 end;
@@ -226,6 +350,40 @@ begin
     ShowMessage('Não achei o Produto ' + edtPesquisa.Text);
   end;
 
+
+end;
+
+procedure TFormMain.btnThreadClick(Sender: TObject);
+var
+  Thread1 : TGravaListaThread;
+  Thread2 : TGravaListaThread;
+  Thread3 : TGravaListaThread;
+
+  iniCarga : TDateTime;
+  Value : TProduto;
+
+begin
+  Thread1 := TGravaListaThread.Create(false,1,'Thread 1');
+  Thread2 := TGravaListaThread.Create(false,2,'Thread 2');
+  Thread3 := TGravaListaThread.Create(false,3,'Thread 3');
+
+  // Carrega os registros
+  iniCarga := now;
+  mmThread.Lines.Add('=================================');
+
+  for Value in DicProduto.Values do
+  begin
+    mmThread.Lines.Add('Codigo....: ' + FormatFloat('00000', Value.Codigo) + '  Descricao.: ' + Value.Descricao);
+  end;
+
+  // Resumo da Carga
+
+  mmThread.Lines.Add('=================================');
+  mmThread.Lines.Add('Quantidade de Registros: ' + IntToStr(DicProduto.Count));
+  mmThread.Lines.Add('Inicio carga da lista:' + FormatDateTime('hh:mm:ss', iniCarga));
+  mmThread.Lines.Add('Fim da carga da lista: ' + FormatDateTime('hh:mm:ss', now));
+  mmThread.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
+  mmThread.Lines.Add('=================================');
 
 end;
 
@@ -273,21 +431,24 @@ procedure TFormMain.pgMainChange(Sender: TObject);
 begin
   if pgMain.ActivePage = tsBusca then
     Begin
-     DicProduto := TDictionary<String, TProduto>.Create;
+      DicProduto := TDictionary<String, TProduto>.Create;
     End
   Else if pgMain.ActivePage = tsJSON then
     Begin
-       LimpaBusca;
+      Limpa(1);
     End
   Else if pgMain.ActivePage = tsThread then
     Begin
-       LimpaBusca;
+      Limpa(1);
     End;
 
 end;
 
-procedure TFormMain.LimpaBusca;
+procedure TFormMain.Limpa(Aba : Integer);
 Begin
+
+   if Aba = 1 then
+     Begin
       //Esvazia a lista do dicionário
       DicProduto.Clear;
       //Libera a memória alocada para a lista do dicionário
@@ -296,7 +457,43 @@ Begin
       mmBusca.Lines.Clear;
       // Limpa Pesquisa;
       edtPesquisa.Text;
+     End
+   Else if Aba = 2 then
+     Begin
+      //Esvazia a lista do dicionário
+      DicProduto.Clear;
+      //Libera a memória alocada para a lista do dicionário
+      DicProduto.Destroy;
+      // Limpa Memo Busca
+      mmBusca.Lines.Clear;
+      // Limpa Pesquisa;
+      edtPesquisa.Text;
+     End
+   Else if Aba = 3 then
+     Begin
+      //Esvazia a lista do dicionário
+      DicProduto.Clear;
+      //Libera a memória alocada para a lista do dicionário
+      DicProduto.Destroy;
+      // Limpa Memo Busca
+      mmBusca.Lines.Clear;
+      // Limpa Pesquisa;
+      edtPesquisa.Text;
+     End;
+
+
 End;
+
+
+procedure TFilhoPessoa.SetNome(const Value: String);
+begin
+  FNome := Value;
+end;
+
+procedure TFilhoPessoa.SetIdade(const Value: Integer);
+begin
+  FIdade := Value;
+end;
 
 procedure TPessoa.SetId(const Value: Integer);
 begin
@@ -316,6 +513,11 @@ end;
 procedure TPessoa.SetDtNascimento(const Value: TDateTime);
 begin
   FDtNascimento := Value;
+end;
+
+procedure TPessoa.SetFilhos(const Value: TObjectList<TFilhoPessoa>);
+begin
+  FFilhos := Value;
 end;
 
 procedure TPessoa.SetCasado(const Value: Boolean);

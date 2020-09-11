@@ -54,7 +54,7 @@ object FormMain: TFormMain
     Top = 57
     Width = 700
     Height = 413
-    ActivePage = tsJSON
+    ActivePage = tsBusca
     Align = alClient
     TabOrder = 1
     OnChange = pgMainChange
@@ -151,7 +151,7 @@ object FormMain: TFormMain
           EditLabel.Height = 13
           EditLabel.Caption = 'Nome'
           TabOrder = 1
-          Text = 'Jos'#233' da Silva'
+          Text = 'Walt Disney'
         end
         object lblPeso: TLabeledEdit
           Left = 14
@@ -221,6 +221,23 @@ object FormMain: TFormMain
         ExplicitTop = 96
         ExplicitWidth = 185
         ExplicitHeight = 41
+        object btnThread: TButton
+          Left = 16
+          Top = 16
+          Width = 201
+          Height = 25
+          Caption = 'Grava e Carrega Listas'
+          TabOrder = 0
+          OnClick = btnThreadClick
+        end
+        object mmThread: TMemo
+          Left = 16
+          Top = 47
+          Width = 321
+          Height = 330
+          ScrollBars = ssVertical
+          TabOrder = 1
+        end
       end
     end
   end
