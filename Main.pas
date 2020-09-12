@@ -5,7 +5,8 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
   Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Generics.Collections, Vcl.ComCtrls,
-  Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Mask, REST.Json, REST.Json.Types, System.Contnrs;
+  Vcl.StdCtrls, Vcl.ExtCtrls, Vcl.Mask, REST.Json, REST.Json.Types, System.Contnrs,
+  Vcl.OleCtrls, SemaforoThread;
 
 type
 
@@ -55,20 +56,8 @@ type
     property Filhos: TObjectList<TFilhoPessoa> read FFilhos write SetFilhos;
   end;
 
-  TGerenciadorRecurso = class
-  private
-    FRecurso : TObjectList;
-    FMultiReadExclusiveWrite : TMultiReadExclusiveWriteSynchronizer;
-  public
-    function AdicionarObjeto(AObjeto : TObject):integer;
-    function PegarObjeto(const AIdx : Integer): TObject;
-    constructor Create;
-    destructor Free;
-  end;
-
-
   TGravaListaThread = class(TThread)
-  private
+    private
     FIndice : Integer;
     FThread : String;
     procedure EscreveLista();
@@ -77,6 +66,18 @@ type
   public
     constructor Create (const CreateSuspended : boolean; const IndiceThread : integer; const NomeThread : string);
   end;
+
+  TLerListaThread = class(TThread)
+    private
+    FIndice : Integer;
+    FThread : String;
+    procedure LerLista();
+  protected
+    procedure Execute; override;
+  public
+    constructor Create (const CreateSuspended : boolean; const IndiceThread : integer; const NomeThread : string);
+  end;
+
 
   TFormMain = class(TForm)
     pnTop: TPanel;
@@ -103,6 +104,9 @@ type
     mmJSON: TMemo;
     btnThread: TButton;
     mmThread: TMemo;
+    mmThread1: TMemo;
+    mmThread2: TMemo;
+    mmThread3: TMemo;
     procedure Button1Click(Sender: TObject);
     procedure btnGerarClick(Sender: TObject);
     procedure btnProcurarClick(Sender: TObject);
@@ -116,6 +120,7 @@ type
     procedure lblNascimentoKeyPress(Sender: TObject; var Key: Char);
     procedure btnThreadClick(Sender: TObject);
 
+
   private
     { Private declarations }
   public
@@ -126,48 +131,25 @@ type
 
 var
   FormMain: TFormMain;
+  ListaThread : TStringList;
+  ContaLista  : Integer;
 
 implementation
 
 {$R *.dfm}
 
 
-function TGerenciadorRecurso.AdicionarObjeto(AObjeto: TObject):integer;
-begin
-  Self.FMultiReadExclusiveWrite.BeginWrite();
-  try
-    Result := Self.FRecurso.Add(AObjeto);
-  finally
-    Self.FMultiReadExclusiveWrite.EndWrite();
-  end;
-end;
-
-
-constructor TGerenciadorRecurso.Create;
-begin
-  Self.FRecurso := TObjectList.Create;
-  Self.FRecurso.OwnsObjects := true;
-  Self.FMultiReadExclusiveWrite := TMultiReadExclusiveWriteSynchronizer.Create;
-end;
-
-destructor TGerenciadorRecurso.Free;
-begin
-  Self.FRecurso.Free;
-  Self.FMultiReadExclusiveWrite.Free;
-end;
-
-function TGerenciadorRecurso.PegarObjeto(const AIdx: Integer): TObject;
-begin
-  Self.FMultiReadExclusiveWrite.BeginRead();
-  try
-    Result := Self.FRecurso.Items[AIdx];
-  finally
-    Self.FMultiReadExclusiveWrite.EndRead();
-  end;
-end;
-
-
 constructor TGravaListaThread.Create(const CreateSuspended: boolean;
+  const IndiceThread: integer; const NomeThread : string);
+begin
+  Self.FIndice := IndiceThread;
+  Self.FThread := NomeThread;
+  Self.FreeOnTerminate  := true;
+  inherited Create(CreateSuspended);
+end;
+
+
+constructor TLerListaThread.Create(const CreateSuspended: boolean;
   const IndiceThread: integer; const NomeThread : string);
 begin
   Self.FIndice := IndiceThread;
@@ -181,22 +163,54 @@ var
   I: Integer;
 begin
 
-  FormMain.DicProduto := TDictionary<String, TProduto>.Create;
+    For I := 1 to 100 Do
+     Begin
+      ListaThread.Add(FThread + ' - ' + FormatFloat('000', i));
+     End;
 
-  For I := 1 to 100 Do
-    Begin
-      FormMain.Produto := TProduto.Create;
-      FormMain.Produto.Codigo := I;
-      FormMain.Produto.Descricao := FThread + ' - ' + FormatDateTime('hh:mm:ss',now);
-      FormMain.DicProduto.Add(IntToStr(FIndice) + '-' + FormatFloat('000', i), FormMain.Produto);
-    End;
+    while not Terminated do
+     begin
+      SemaforoThread.SetLista(ListaThread);
+      Sleep(2500);
+     end;
 
+end;
+
+procedure TLerListaThread.LerLista;
+var
+  I: Integer;
+begin
+
+    while not Terminated do
+     begin
+      SemaforoThread.GetLista(ListaThread);
+
+      for i:=0 to ListaThread.Count-1 do
+      begin
+        If FIndice = 1 then
+             FormMain.mmThread1.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
+        Else If FIndice = 2 then
+             FormMain.mmThread2.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
+        Else If FIndice = 3 then
+             FormMain.mmThread3.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
+      end;
+
+      Sleep(2500);
+     end;
+
+     FreeOnTerminate := true;
 
 end;
 
 procedure TGravaListaThread.Execute;
 begin
   EscreveLista();
+end;
+
+
+procedure TLerListaThread.Execute;
+begin
+  LerLista();
 end;
 
 procedure TFormMain.btnGerarClick(Sender: TObject);
@@ -208,7 +222,6 @@ var
   Key : String;
 
 begin
-
 
   // Geração da lista com os 50000 registros
   For i := 1 to 50000 Do
@@ -284,35 +297,37 @@ begin
       Exit;
     End;
 
-  Pessoa := TPessoa.Create;
 
   try
+
+    Pessoa := TPessoa.Create;
     Pessoa.Id := StrToInt(lblCodigo.Text);
     Pessoa.Nome := lblNome.Text;
     Pessoa.Peso := StrToFloat(lblPeso.Text);
     Pessoa.DtNascimento := StrToDate(lblNascimento.Text);
     Pessoa.Casado := chkCasado.Checked;
 
-  {
     // Criação de 3 Filhos para compor o array
-
-
-    Filho := TFilhoPessoa.Create;
-    Filho.Nome := 'Mickey';
-    Filho.Idade := 30;
-    Pessoa.Filhos[0] := Filho;
+    Pessoa.Filhos := TOBjectList<TFilhoPessoa>.Create;
 
     Filho := TFilhoPessoa.Create;
-    Filho.Nome := 'Pateta';
-    Filho.Idade := 45;
-    Pessoa.Filhos[1] := Filho;
+    Filho.Nome := 'Salomao';
+    Filho.Idade := 300;
+    Pessoa.Filhos.Add(Filho);
 
     Filho := TFilhoPessoa.Create;
-    Filho.Nome := 'Pluto';
-    Filho.Idade := 10;
-    Pessoa.Filhos[2] := Filho;
- }
+    Filho.Nome := 'Absalao';
+    Filho.Idade := 258;
+    Pessoa.Filhos.Add(Filho);
+
+    Filho := TFilhoPessoa.Create;
+    Filho.Nome := 'Adonias';
+    Filho.Idade := 211;
+    Pessoa.Filhos.Add(Filho);
+
+    // Mostra resultados
     mmJSON.Lines.Text := TJson.ObjectToJsonString(Pessoa);
+
   finally
     Pessoa.Free;
     Filho.Free;
@@ -355,14 +370,16 @@ end;
 
 procedure TFormMain.btnThreadClick(Sender: TObject);
 var
-  Thread1 : TGravaListaThread;
-  Thread2 : TGravaListaThread;
-  Thread3 : TGravaListaThread;
+
+  Thread1, Thread2, Thread3 : TGravaListaThread;
+  ThreadL1, ThreadL2,ThreadL3 : TLerListaThread;
 
   iniCarga : TDateTime;
-  Value : TProduto;
-
+  i : integer;
 begin
+
+  ListaThread := TStringList.Create;
+
   Thread1 := TGravaListaThread.Create(false,1,'Thread 1');
   Thread2 := TGravaListaThread.Create(false,2,'Thread 2');
   Thread3 := TGravaListaThread.Create(false,3,'Thread 3');
@@ -371,19 +388,26 @@ begin
   iniCarga := now;
   mmThread.Lines.Add('=================================');
 
-  for Value in DicProduto.Values do
+  for i:=0 to ListaThread.Count-1 do
   begin
-    mmThread.Lines.Add('Codigo....: ' + FormatFloat('00000', Value.Codigo) + '  Descricao.: ' + Value.Descricao);
+    mmThread.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
   end;
 
   // Resumo da Carga
 
   mmThread.Lines.Add('=================================');
-  mmThread.Lines.Add('Quantidade de Registros: ' + IntToStr(DicProduto.Count));
+  mmThread.Lines.Add('Quantidade de Registros: ' + IntToStr(ListaThread.Count));
   mmThread.Lines.Add('Inicio carga da lista:' + FormatDateTime('hh:mm:ss', iniCarga));
   mmThread.Lines.Add('Fim da carga da lista: ' + FormatDateTime('hh:mm:ss', now));
   mmThread.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
   mmThread.Lines.Add('=================================');
+
+
+  ThreadL1 := TLerListaThread.Create(false,1,'Thread 1');
+  ThreadL2 := TLerListaThread.Create(false,2,'Thread 2');
+  ThreadL3 := TLerListaThread.Create(false,3,'Thread 3');
+
+  ListaThread.Free;
 
 end;
 
@@ -525,4 +549,7 @@ begin
   FCasado := Value;
 end;
 
+
+
 end.
+

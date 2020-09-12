@@ -5,8 +5,10 @@
     <Transaction>2017/12/27 16:01:02.000.254,=C:\Users\Lincoln\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
     <Transaction>2018/11/23 13:39:35.000.493,=C:\Users\Lincoln\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
     <Transaction>2020/09/10 20:03:59.946,=C:\Users\Lincoln\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
-    <Transaction>2020/09/10 21:21:55.274,D:\Sistemas\Avaliacao CM\Main.dfm=C:\Users\Lincoln\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
     <Transaction>2020/09/10 21:21:55.274,D:\Sistemas\Avaliacao CM\Main.pas=C:\Users\Lincoln\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2020/09/10 21:21:55.274,D:\Sistemas\Avaliacao CM\Main.dfm=C:\Users\Lincoln\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
     <Transaction>2020/09/10 21:22:13.601,D:\Sistemas\Avaliacao CM\CMTest.dproj=C:\Users\Lincoln\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>2020/09/12 07:16:18.692,=D:\Sistemas\Avaliacao CM\Unit1.pas</Transaction>
+    <Transaction>2020/09/12 07:17:36.249,D:\Sistemas\Avaliacao CM\SemaforoThread.pas=D:\Sistemas\Avaliacao CM\Unit1.pas</Transaction>
   </Transactions>
 </BorlandProject>

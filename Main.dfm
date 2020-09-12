@@ -151,7 +151,7 @@ object FormMain: TFormMain
           EditLabel.Height = 13
           EditLabel.Caption = 'Nome'
           TabOrder = 1
-          Text = 'Walt Disney'
+          Text = 'David'
         end
         object lblPeso: TLabeledEdit
           Left = 14
@@ -200,7 +200,7 @@ object FormMain: TFormMain
           Left = 183
           Top = 16
           Width = 497
-          Height = 351
+          Height = 241
           ScrollBars = ssVertical
           TabOrder = 6
         end
@@ -233,10 +233,34 @@ object FormMain: TFormMain
         object mmThread: TMemo
           Left = 16
           Top = 47
-          Width = 321
+          Width = 313
           Height = 330
           ScrollBars = ssVertical
           TabOrder = 1
+        end
+        object mmThread1: TMemo
+          Left = 346
+          Top = 47
+          Width = 313
+          Height = 98
+          ScrollBars = ssVertical
+          TabOrder = 2
+        end
+        object mmThread2: TMemo
+          Left = 346
+          Top = 164
+          Width = 313
+          Height = 98
+          ScrollBars = ssVertical
+          TabOrder = 3
+        end
+        object mmThread3: TMemo
+          Left = 346
+          Top = 279
+          Width = 313
+          Height = 98
+          ScrollBars = ssVertical
+          TabOrder = 4
         end
       end
     end
