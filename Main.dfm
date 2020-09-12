@@ -11,7 +11,6 @@ object FormMain: TFormMain
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
-  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object pnTop: TPanel
@@ -57,7 +56,6 @@ object FormMain: TFormMain
     ActivePage = tsBusca
     Align = alClient
     TabOrder = 1
-    OnChange = pgMainChange
     object tsBusca: TTabSheet
       Caption = 'Busca Perform'#225'tica'
       object pnBusca: TPanel

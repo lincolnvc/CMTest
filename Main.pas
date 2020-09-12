@@ -10,14 +10,14 @@ uses
 
 type
 
-  // Classe da Lista da Questão 1
+  // Classe da Questão 1
   TProduto = Class
     Codigo : Integer;
     Descricao : String;
 
   End;
 
-  // Classe da Questão 2
+  // Classes da Questão 2
   TFilhoPessoa = Class
   private
     FNome: String;
@@ -56,6 +56,7 @@ type
     property Filhos: TObjectList<TFilhoPessoa> read FFilhos write SetFilhos;
   end;
 
+  // Classes Questão 3
   TGravaListaThread = class(TThread)
     private
     FIndice : Integer;
@@ -110,10 +111,7 @@ type
     procedure Button1Click(Sender: TObject);
     procedure btnGerarClick(Sender: TObject);
     procedure btnProcurarClick(Sender: TObject);
-    procedure pgMainChange(Sender: TObject);
     procedure edtPesquisaKeyPress(Sender: TObject; var Key: Char);
-    procedure FormCreate(Sender: TObject);
-    procedure Limpa(Aba : Integer);
     procedure btnJSONClick(Sender: TObject);
     procedure lblCodigoKeyPress(Sender: TObject; var Key: Char);
     procedure lblPesoKeyPress(Sender: TObject; var Key: Char);
@@ -132,7 +130,6 @@ type
 var
   FormMain: TFormMain;
   ListaThread : TStringList;
-  ContaLista  : Integer;
 
 implementation
 
@@ -168,11 +165,12 @@ begin
       ListaThread.Add(FThread + ' - ' + FormatFloat('000', i));
      End;
 
-    while not Terminated do
+     while not Terminated do
      begin
-      SemaforoThread.SetLista(ListaThread);
-      Sleep(2500);
+       SemaforoThread.SetLista(ListaThread);
+       Sleep(2500);
      end;
+
 
 end;
 
@@ -181,24 +179,25 @@ var
   I: Integer;
 begin
 
-    while not Terminated do
-     begin
       SemaforoThread.GetLista(ListaThread);
 
-      for i:=0 to ListaThread.Count-1 do
-      begin
-        If FIndice = 1 then
-             FormMain.mmThread1.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
-        Else If FIndice = 2 then
-             FormMain.mmThread2.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
-        Else If FIndice = 3 then
-             FormMain.mmThread3.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
-      end;
+     // while not Terminated  do
+     // begin
+        for i:=0 to ListaThread.Count-1 do
+        begin
+          If FIndice = 1 then
+               FormMain.mmThread1.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
+          Else If FIndice = 2 then
+               FormMain.mmThread2.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
+          Else If FIndice = 3 then
+               FormMain.mmThread3.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
+
+        end;
+
+      //  end;
 
       Sleep(2500);
-     end;
 
-     FreeOnTerminate := true;
 
 end;
 
@@ -213,6 +212,7 @@ begin
   LerLista();
 end;
 
+
 procedure TFormMain.btnGerarClick(Sender: TObject);
 var
 
@@ -222,6 +222,17 @@ var
   Key : String;
 
 begin
+
+  if Assigned(DicProduto) And (DicProduto <> Nil) then
+    Begin
+      DicProduto.Clear;
+    End
+  Else
+    Begin
+      DicProduto := TDictionary<String, TProduto>.Create;
+    End;
+
+  mmBusca.Clear;
 
   // Geração da lista com os 50000 registros
   For i := 1 to 50000 Do
@@ -338,6 +349,12 @@ end;
 procedure TFormMain.btnProcurarClick(Sender: TObject);
 begin
 
+  if Not (Assigned(DicProduto) And (DicProduto <> Nil)) then
+    Begin
+       ShowMessage('Gere e carregue a lista primeiro');
+       Exit;
+    End;
+
   If DicProduto.Count <= 0 Then
     Begin
        ShowMessage('Gere e carregue a lista primeiro');
@@ -378,36 +395,71 @@ var
   i : integer;
 begin
 
-  ListaThread := TStringList.Create;
+  Try
 
-  Thread1 := TGravaListaThread.Create(false,1,'Thread 1');
-  Thread2 := TGravaListaThread.Create(false,2,'Thread 2');
-  Thread3 := TGravaListaThread.Create(false,3,'Thread 3');
+    if Assigned(DicProduto) And (DicProduto <> Nil) then
+      Begin
+        FreeAndNil(DicProduto);
+        mmBusca.Clear;
+      End;
 
-  // Carrega os registros
-  iniCarga := now;
-  mmThread.Lines.Add('=================================');
+    if Assigned(ThreadL1) And (ThreadL1 <> Nil) then
+     Begin
+        ThreadL1.Terminate;
+     End;
 
-  for i:=0 to ListaThread.Count-1 do
-  begin
-    mmThread.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
-  end;
+    if Assigned(ThreadL2) And (ThreadL2 <> Nil) then
+     Begin
+        ThreadL2.Terminate;
+     End;
 
-  // Resumo da Carga
+    if Assigned(ThreadL3) And (ThreadL3 <> Nil) then
+     Begin
+        ThreadL3.Terminate;
+     End;
 
-  mmThread.Lines.Add('=================================');
-  mmThread.Lines.Add('Quantidade de Registros: ' + IntToStr(ListaThread.Count));
-  mmThread.Lines.Add('Inicio carga da lista:' + FormatDateTime('hh:mm:ss', iniCarga));
-  mmThread.Lines.Add('Fim da carga da lista: ' + FormatDateTime('hh:mm:ss', now));
-  mmThread.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
-  mmThread.Lines.Add('=================================');
+    mmThread.Clear;
+    mmThread1.Clear;
+    mmThread2.Clear;
+    mmThread3.Clear;
 
+    ListaThread := TStringList.Create;
 
-  ThreadL1 := TLerListaThread.Create(false,1,'Thread 1');
-  ThreadL2 := TLerListaThread.Create(false,2,'Thread 2');
-  ThreadL3 := TLerListaThread.Create(false,3,'Thread 3');
+    Thread1 := TGravaListaThread.Create(false,1,'Thread 1');
+    Thread2 := TGravaListaThread.Create(false,2,'Thread 2');
+    Thread3 := TGravaListaThread.Create(false,3,'Thread 3');
 
-  ListaThread.Free;
+    // Carrega os registros
+    iniCarga := now;
+    mmThread.Lines.Add('=================================');
+
+    for i:=0 to ListaThread.Count-1 do
+    begin
+      mmThread.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
+    end;
+
+    // Resumo da Carga
+
+    mmThread.Lines.Add('=================================');
+    mmThread.Lines.Add('Quantidade de Registros: ' + IntToStr(ListaThread.Count));
+    mmThread.Lines.Add('Inicio carga da lista:' + FormatDateTime('hh:mm:ss', iniCarga));
+    mmThread.Lines.Add('Fim da carga da lista: ' + FormatDateTime('hh:mm:ss', now));
+    mmThread.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
+    mmThread.Lines.Add('=================================');
+
+    ThreadL1 := TLerListaThread.Create(false,1,'Thread 1');
+    ThreadL2 := TLerListaThread.Create(false,2,'Thread 2');
+    ThreadL3 := TLerListaThread.Create(false,3,'Thread 3');
+
+  Finally
+
+     Thread1.Terminate;
+     Thread2.Terminate;
+     Thread3.Terminate;
+
+     ListaThread.Free;
+
+  End;
 
 end;
 
@@ -420,13 +472,6 @@ procedure TFormMain.edtPesquisaKeyPress(Sender: TObject; var Key: Char);
 begin
   If Not (Key in ['0'..'9',#8])  Then
     Key := Char(0);
-
-end;
-
-procedure TFormMain.FormCreate(Sender: TObject);
-begin
-  // Criação da Lista do Dicionário
-  DicProduto := TDictionary<String, TProduto>.Create;
 
 end;
 
@@ -450,64 +495,6 @@ begin
     Key := Char(0);
 
 end;
-
-procedure TFormMain.pgMainChange(Sender: TObject);
-begin
-  if pgMain.ActivePage = tsBusca then
-    Begin
-      DicProduto := TDictionary<String, TProduto>.Create;
-    End
-  Else if pgMain.ActivePage = tsJSON then
-    Begin
-      Limpa(1);
-    End
-  Else if pgMain.ActivePage = tsThread then
-    Begin
-      Limpa(1);
-    End;
-
-end;
-
-procedure TFormMain.Limpa(Aba : Integer);
-Begin
-
-   if Aba = 1 then
-     Begin
-      //Esvazia a lista do dicionário
-      DicProduto.Clear;
-      //Libera a memória alocada para a lista do dicionário
-      DicProduto.Destroy;
-      // Limpa Memo Busca
-      mmBusca.Lines.Clear;
-      // Limpa Pesquisa;
-      edtPesquisa.Text;
-     End
-   Else if Aba = 2 then
-     Begin
-      //Esvazia a lista do dicionário
-      DicProduto.Clear;
-      //Libera a memória alocada para a lista do dicionário
-      DicProduto.Destroy;
-      // Limpa Memo Busca
-      mmBusca.Lines.Clear;
-      // Limpa Pesquisa;
-      edtPesquisa.Text;
-     End
-   Else if Aba = 3 then
-     Begin
-      //Esvazia a lista do dicionário
-      DicProduto.Clear;
-      //Libera a memória alocada para a lista do dicionário
-      DicProduto.Destroy;
-      // Limpa Memo Busca
-      mmBusca.Lines.Clear;
-      // Limpa Pesquisa;
-      edtPesquisa.Text;
-     End;
-
-
-End;
-
 
 procedure TFilhoPessoa.SetNome(const Value: String);
 begin
