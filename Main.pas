@@ -62,6 +62,7 @@ type
     FIndice : Integer;
     FThread : String;
     procedure EscreveLista();
+    procedure FinalizarThread(Sender: TObject);
   protected
     procedure Execute; override;
   public
@@ -73,6 +74,7 @@ type
     FIndice : Integer;
     FThread : String;
     procedure LerLista();
+    procedure FinalizarThread(Sender: TObject);
   protected
     procedure Execute; override;
   public
@@ -93,7 +95,6 @@ type
     btnGerar: TButton;
     Button1: TButton;
     mmBusca: TMemo;
-    lblEstimativa: TLabel;
     btnProcurar: TButton;
     edtPesquisa: TEdit;
     lblCodigo: TLabeledEdit;
@@ -117,6 +118,9 @@ type
     procedure lblPesoKeyPress(Sender: TObject; var Key: Char);
     procedure lblNascimentoKeyPress(Sender: TObject; var Key: Char);
     procedure btnThreadClick(Sender: TObject);
+    procedure btnThreadLeituraClick(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure pgMainChange(Sender: TObject);
 
 
   private
@@ -142,6 +146,7 @@ begin
   Self.FIndice := IndiceThread;
   Self.FThread := NomeThread;
   Self.FreeOnTerminate  := true;
+  Self.OnTerminate := FinalizarThread;
   inherited Create(CreateSuspended);
 end;
 
@@ -152,6 +157,7 @@ begin
   Self.FIndice := IndiceThread;
   Self.FThread := NomeThread;
   Self.FreeOnTerminate  := true;
+  Self.OnTerminate := FinalizarThread;
   inherited Create(CreateSuspended);
 end;
 
@@ -160,17 +166,20 @@ var
   I: Integer;
 begin
 
-    For I := 1 to 100 Do
-     Begin
-      ListaThread.Add(FThread + ' - ' + FormatFloat('000', i));
-     End;
+     //while not Terminated do
+     // begin
 
-     while not Terminated do
-     begin
-       SemaforoThread.SetLista(ListaThread);
-       Sleep(2500);
-     end;
+       For I := 1 to 100 Do
+        Begin
+          ListaThread.Add(FThread + ' - ' + FormatFloat('000', i));
+          SemaforoThread.SetLista(ListaThread);
+        End;
 
+     //  Sleep(600000);
+
+     // end;
+
+     If Terminated Then Exit;
 
 end;
 
@@ -185,33 +194,53 @@ begin
      // begin
         for i:=0 to ListaThread.Count-1 do
         begin
-          If FIndice = 1 then
-               FormMain.mmThread1.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
-          Else If FIndice = 2 then
-               FormMain.mmThread2.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i])
-          Else If FIndice = 3 then
-               FormMain.mmThread3.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
+          Synchronize(
+                      procedure ()
+                       Begin
+                        If FIndice = 1 then
+                          Begin
+                             FormMain.mmThread1.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
+                          End
+                        Else If FIndice = 2 then
+                          Begin
+                             FormMain.mmThread2.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
+                          End
+                        Else If FIndice = 3 then
+                          Begin
+                             FormMain.mmThread3.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
+                          End;
+                       End
+                     );
 
         end;
 
       //  end;
 
-      Sleep(2500);
-
+      Sleep(100000);
 
 end;
 
 procedure TGravaListaThread.Execute;
 begin
+  Self.NameThreadForDebugging('Thread Gravar ' + IntToStr(Self.FIndice));
   EscreveLista();
 end;
 
+procedure TGravaListaThread.FinalizarThread(Sender: TObject);
+begin
+  Terminate;
+end;
 
 procedure TLerListaThread.Execute;
 begin
+  Self.NameThreadForDebugging('Thread Ler ' + IntToStr(Self.FIndice));
   LerLista();
 end;
 
+procedure TLerListaThread.FinalizarThread(Sender: TObject);
+begin
+  Terminate;
+end;
 
 procedure TFormMain.btnGerarClick(Sender: TObject);
 var
@@ -234,6 +263,10 @@ begin
 
   mmBusca.Clear;
 
+  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('Gerando Lista,aguarde!');
+  mmBusca.Lines.Add('=================================');
+
   // Geração da lista com os 50000 registros
   For i := 1 to 50000 Do
     Begin
@@ -243,7 +276,7 @@ begin
       DicProduto.Add(FormatFloat('00000', i), Produto);
     End;
 
-
+  { // Retirado para não demorar
   // Carrega os registros
   iniCarga := now;
   mmBusca.Lines.Add('=================================');
@@ -252,14 +285,19 @@ begin
   begin
     mmBusca.Lines.Add('Codigo....: ' + FormatFloat('00000', Value.Codigo) + '  Descricao.: ' + Value.Descricao);
   end;
+  }
 
   // Resumo da Carga
-
   mmBusca.Lines.Add('=================================');
   mmBusca.Lines.Add('Quantidade de Registros: ' + IntToStr(DicProduto.Count));
   mmBusca.Lines.Add('Inicio carga da lista:' + FormatDateTime('hh:mm:ss', iniCarga));
   mmBusca.Lines.Add('Fim da carga da lista: ' + FormatDateTime('hh:mm:ss', now));
   mmBusca.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
+  mmBusca.Lines.Add('=================================');
+
+  mmBusca.Lines.Add('');
+  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('Agora você já pode pesquisar!');
   mmBusca.Lines.Add('=================================');
 
 
@@ -369,6 +407,7 @@ begin
 
   if (DicProduto.TryGetValue(FormatFloat('00000',StrToInt(edtPesquisa.Text)), Produto) = True) then
   begin
+    mmBusca.Lines.Add('');
     mmBusca.Lines.Add('=================================');
     mmBusca.Lines.Add('Achei o Produto Código ' + IntToStr(Produto.Codigo) + ' -  Descrição = ' + Produto.Descricao );
     mmBusca.Lines.Add('=================================');
@@ -376,6 +415,7 @@ begin
   end
   else
   begin
+    mmBusca.Lines.Add('');
     mmBusca.Lines.Add('=================================');
     mmBusca.Lines.Add('Não achei o Produto ' + edtPesquisa.Text);
     mmBusca.Lines.Add('=================================');
@@ -387,9 +427,8 @@ end;
 
 procedure TFormMain.btnThreadClick(Sender: TObject);
 var
-
   Thread1, Thread2, Thread3 : TGravaListaThread;
-  ThreadL1, ThreadL2,ThreadL3 : TLerListaThread;
+  ThreadLer1, ThreadLer2,ThreadLer3 : TLerListaThread;
 
   iniCarga : TDateTime;
   i : integer;
@@ -397,31 +436,7 @@ begin
 
   Try
 
-    if Assigned(DicProduto) And (DicProduto <> Nil) then
-      Begin
-        FreeAndNil(DicProduto);
-        mmBusca.Clear;
-      End;
-
-    if Assigned(ThreadL1) And (ThreadL1 <> Nil) then
-     Begin
-        ThreadL1.Terminate;
-     End;
-
-    if Assigned(ThreadL2) And (ThreadL2 <> Nil) then
-     Begin
-        ThreadL2.Terminate;
-     End;
-
-    if Assigned(ThreadL3) And (ThreadL3 <> Nil) then
-     Begin
-        ThreadL3.Terminate;
-     End;
-
-    mmThread.Clear;
-    mmThread1.Clear;
-    mmThread2.Clear;
-    mmThread3.Clear;
+    If Assigned(ListaThread) And (ListaThread <> Nil) Then FreeAndNil(ListaThread);
 
     ListaThread := TStringList.Create;
 
@@ -429,14 +444,29 @@ begin
     Thread2 := TGravaListaThread.Create(false,2,'Thread 2');
     Thread3 := TGravaListaThread.Create(false,3,'Thread 3');
 
+    mmThread.Clear;
+    mmThread1.Clear;
+    mmThread2.Clear;
+    mmThread3.Clear;
+
+    mmThread.Refresh;
+    mmThread1.Refresh;
+    mmThread2.Refresh;
+    mmThread3.Refresh;
+
     // Carrega os registros
+    mmThread.Lines.Add('===================================');
+    mmThread.Lines.Add('Gerando Lista via Threads, aguarde.');
+    mmThread.Lines.Add('===================================');
+
+    Sleep(1500) ;
     iniCarga := now;
-    mmThread.Lines.Add('=================================');
 
     for i:=0 to ListaThread.Count-1 do
     begin
       mmThread.Lines.Add(IntToStr(i+1) + ' - ' + ListaThread[i]);
     end;
+
 
     // Resumo da Carga
 
@@ -447,19 +477,69 @@ begin
     mmThread.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
     mmThread.Lines.Add('=================================');
 
-    ThreadL1 := TLerListaThread.Create(false,1,'Thread 1');
-    ThreadL2 := TLerListaThread.Create(false,2,'Thread 2');
-    ThreadL3 := TLerListaThread.Create(false,3,'Thread 3');
+    {
+    if Assigned(ThreadLer1) And  (ThreadLer1 <> Nil) then
+     Begin
+        ThreadLer1.Terminate;
+     End;
+
+    if Assigned(ThreadLer2) And (ThreadLer2 <> Nil) then
+     Begin
+        ThreadLer2.Terminate;
+     End;
+
+    if Assigned(ThreadLer3) And (ThreadLer3 <> Nil) then
+     Begin
+        ThreadLer3.Terminate;
+     End;
+    }
+
+    ThreadLer1 := TLerListaThread.Create(false,1,'Thread 1');
+    ThreadLer2 := TLerListaThread.Create(false,2,'Thread 2');
+    ThreadLer3 := TLerListaThread.Create(false,3,'Thread 3');
+
+    Sleep(3000);
 
   Finally
 
-     Thread1.Terminate;
-     Thread2.Terminate;
-     Thread3.Terminate;
-
-     ListaThread.Free;
+    Thread1.Terminate;
+    Thread2.Terminate;
+    Thread3.Terminate;
 
   End;
+
+end;
+
+procedure TFormMain.btnThreadLeituraClick(Sender: TObject);
+var
+  ThreadLer1, ThreadLer2,ThreadLer3 : TLerListaThread;
+
+begin
+
+    if Not (Assigned(ListaThread) And (ListaThread <> Nil)) then
+      Begin
+        ShowMessage('Carregue a lista primeiro!');
+        Exit;
+      End;
+
+    if Assigned(ThreadLer1) And  (ThreadLer1 <> Nil) then
+     Begin
+        ThreadLer1.Terminate;
+     End;
+
+    if Assigned(ThreadLer2) And (ThreadLer2 <> Nil) then
+     Begin
+        ThreadLer2.Terminate;
+     End;
+
+    if Assigned(ThreadLer3) And (ThreadLer3 <> Nil) then
+     Begin
+        ThreadLer3.Terminate;
+     End;
+
+    ThreadLer1 := TLerListaThread.Create(false,1,'Thread 1');
+    ThreadLer2 := TLerListaThread.Create(false,2,'Thread 2');
+    ThreadLer3 := TLerListaThread.Create(false,3,'Thread 3');
 
 end;
 
@@ -473,6 +553,11 @@ begin
   If Not (Key in ['0'..'9',#8])  Then
     Key := Char(0);
 
+end;
+
+procedure TFormMain.FormCreate(Sender: TObject);
+begin
+  TThread(Self).NameThreadForDebugging('Thread Principal');
 end;
 
 procedure TFormMain.lblCodigoKeyPress(Sender: TObject; var Key: Char);
@@ -493,6 +578,28 @@ procedure TFormMain.lblPesoKeyPress(Sender: TObject; var Key: Char);
 begin
   If Not (Key in ['0'..'9',',',#8]) Then
     Key := Char(0);
+
+end;
+
+procedure TFormMain.pgMainChange(Sender: TObject);
+begin
+
+   // Limpa Aba Busca Performática
+   edtPesquisa.Text := '';
+   mmBusca.Clear;
+   if Assigned(DicProduto) And (DicProduto <> Nil) then FreeAndNil(DicProduto);
+   // Limpa Aba JSON
+   mmJSON.Clear;
+   if Assigned(DicProduto) And (DicProduto <> Nil) then
+    Begin
+      FreeAndNil(DicProduto);
+    End;
+   // Limpa Aba Thread
+   If Assigned(ListaThread) And (ListaThread <> Nil) Then FreeAndNil(ListaThread);
+   mmThread.Clear;
+   mmThread1.Clear;
+   mmThread2.Clear;
+   mmThread3.Clear;
 
 end;
 

@@ -11,6 +11,7 @@ object FormMain: TFormMain
   Font.Name = 'Tahoma'
   Font.Style = []
   OldCreateOrder = False
+  OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
   object pnTop: TPanel
@@ -53,9 +54,10 @@ object FormMain: TFormMain
     Top = 57
     Width = 700
     Height = 413
-    ActivePage = tsBusca
+    ActivePage = tsThread
     Align = alClient
     TabOrder = 1
+    OnChange = pgMainChange
     object tsBusca: TTabSheet
       Caption = 'Busca Perform'#225'tica'
       object pnBusca: TPanel
@@ -70,19 +72,12 @@ object FormMain: TFormMain
         ExplicitTop = 96
         ExplicitWidth = 185
         ExplicitHeight = 41
-        object lblEstimativa: TLabel
-          Left = 28
-          Top = 42
-          Width = 121
-          Height = 13
-          Caption = '~ 2 minutos 15 segundos'
-        end
         object btnGerar: TButton
           Left = 12
           Top = 16
           Width = 153
           Height = 25
-          Caption = 'Gerar e Carregar Lista'
+          Caption = 'Gerar Lista'
           TabOrder = 0
           OnClick = btnGerarClick
         end
