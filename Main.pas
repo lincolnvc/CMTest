@@ -175,11 +175,9 @@ begin
           SemaforoThread.SetLista(ListaThread);
         End;
 
-     //  Sleep(600000);
-
      // end;
 
-     If Terminated Then Exit;
+     Exit;
 
 end;
 
@@ -217,6 +215,8 @@ begin
       //  end;
 
       Sleep(100000);
+
+      Exit;
 
 end;
 
@@ -263,9 +263,9 @@ begin
 
   mmBusca.Clear;
 
-  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('======================================');
   mmBusca.Lines.Add('Gerando Lista,aguarde!');
-  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('======================================');
 
   // Geração da lista com os 50000 registros
   For i := 1 to 50000 Do
@@ -288,17 +288,18 @@ begin
   }
 
   // Resumo da Carga
-  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('');
+  mmBusca.Lines.Add('======================================');
   mmBusca.Lines.Add('Quantidade de Registros: ' + IntToStr(DicProduto.Count));
   mmBusca.Lines.Add('Inicio carga da lista:' + FormatDateTime('hh:mm:ss', iniCarga));
   mmBusca.Lines.Add('Fim da carga da lista: ' + FormatDateTime('hh:mm:ss', now));
   mmBusca.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
-  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('======================================');
 
   mmBusca.Lines.Add('');
-  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('======================================');
   mmBusca.Lines.Add('Agora você já pode pesquisar!');
-  mmBusca.Lines.Add('=================================');
+  mmBusca.Lines.Add('======================================');
 
 
 end;
@@ -408,18 +409,16 @@ begin
   if (DicProduto.TryGetValue(FormatFloat('00000',StrToInt(edtPesquisa.Text)), Produto) = True) then
   begin
     mmBusca.Lines.Add('');
-    mmBusca.Lines.Add('=================================');
+    mmBusca.Lines.Add('======================================');
     mmBusca.Lines.Add('Achei o Produto Código ' + IntToStr(Produto.Codigo) + ' -  Descrição = ' + Produto.Descricao );
-    mmBusca.Lines.Add('=================================');
-    ShowMessage('Achei o Produto Código ' + IntToStr(Produto.Codigo) + ' -  Descrição = ' + Produto.Descricao)
+    mmBusca.Lines.Add('======================================');
   end
   else
   begin
     mmBusca.Lines.Add('');
-    mmBusca.Lines.Add('=================================');
+    mmBusca.Lines.Add('======================================');
     mmBusca.Lines.Add('Não achei o Produto ' + edtPesquisa.Text);
-    mmBusca.Lines.Add('=================================');
-    ShowMessage('Não achei o Produto ' + edtPesquisa.Text);
+    mmBusca.Lines.Add('======================================');
   end;
 
 
@@ -469,30 +468,12 @@ begin
 
 
     // Resumo da Carga
-
     mmThread.Lines.Add('=================================');
     mmThread.Lines.Add('Quantidade de Registros: ' + IntToStr(ListaThread.Count));
     mmThread.Lines.Add('Inicio carga da lista:' + FormatDateTime('hh:mm:ss', iniCarga));
     mmThread.Lines.Add('Fim da carga da lista: ' + FormatDateTime('hh:mm:ss', now));
     mmThread.Lines.Add('Tempo Total da carga da lista: ' + FormatDateTime('hh:mm:ss', now - iniCarga));
     mmThread.Lines.Add('=================================');
-
-    {
-    if Assigned(ThreadLer1) And  (ThreadLer1 <> Nil) then
-     Begin
-        ThreadLer1.Terminate;
-     End;
-
-    if Assigned(ThreadLer2) And (ThreadLer2 <> Nil) then
-     Begin
-        ThreadLer2.Terminate;
-     End;
-
-    if Assigned(ThreadLer3) And (ThreadLer3 <> Nil) then
-     Begin
-        ThreadLer3.Terminate;
-     End;
-    }
 
     ThreadLer1 := TLerListaThread.Create(false,1,'Thread 1');
     ThreadLer2 := TLerListaThread.Create(false,2,'Thread 2');
@@ -516,30 +497,6 @@ var
 
 begin
 
-    if Not (Assigned(ListaThread) And (ListaThread <> Nil)) then
-      Begin
-        ShowMessage('Carregue a lista primeiro!');
-        Exit;
-      End;
-
-    if Assigned(ThreadLer1) And  (ThreadLer1 <> Nil) then
-     Begin
-        ThreadLer1.Terminate;
-     End;
-
-    if Assigned(ThreadLer2) And (ThreadLer2 <> Nil) then
-     Begin
-        ThreadLer2.Terminate;
-     End;
-
-    if Assigned(ThreadLer3) And (ThreadLer3 <> Nil) then
-     Begin
-        ThreadLer3.Terminate;
-     End;
-
-    ThreadLer1 := TLerListaThread.Create(false,1,'Thread 1');
-    ThreadLer2 := TLerListaThread.Create(false,2,'Thread 2');
-    ThreadLer3 := TLerListaThread.Create(false,3,'Thread 3');
 
 end;
 

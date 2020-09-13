@@ -54,7 +54,7 @@ object FormMain: TFormMain
     Top = 57
     Width = 700
     Height = 413
-    ActivePage = tsThread
+    ActivePage = tsBusca
     Align = alClient
     TabOrder = 1
     OnChange = pgMainChange
